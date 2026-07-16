@@ -1,15 +1,19 @@
 {
   "expo": {
-    "name": "clever-davinci-standard",
+    "name": "아카데미아 아틀리에",
     "slug": "clever-davinci-standard",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "dark",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.ideas.academiaatelier",
+      "buildNumber": "1"
     },
     "android": {
+      "package": "com.ideas.academiaatelier",
+      "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -19,6 +23,10 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "expo-font",
+      "expo-splash-screen"
+    ]
   }
 }

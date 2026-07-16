@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "expo-web",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["expo", "start", "--web", "--port", "8082"],
+      "port": 8082
+    },
+    {
+      "name": "assets-static",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", "-l", "4173", "C:/Users/dbdnj/Desktop/academia-atelier-toss/assets-src"],
+      "port": 4173
+    }
+  ]
+}

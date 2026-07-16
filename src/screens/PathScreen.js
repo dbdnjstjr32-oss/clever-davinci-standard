@@ -1,0 +1,290 @@
+import React, { useRef, useEffect } from 'react';
+import { StyleSheet, View, Text, TouchableOpacity, Pressable, StatusBar, Animated, Easing } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
+import * as Haptics from 'expo-haptics';
+import { colors, fonts } from '../theme';
+
+const Sign = ({ label, icon, rotate, offsetX, onPress, delay }) => {
+  const anim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(anim, {
+      toValue: 1,
+      duration: 600,
+      delay,
+      easing: Easing.out(Easing.back(1.4)),
+      useNativeDriver: true,
+    }).start();
+  }, []);
+
+  return (
+    <Animated.View
+      style={[
+        styles.signWrap,
+        {
+          transform: [
+            { translateX: offsetX },
+            { rotate: `${rotate}deg` },
+            {
+              scale: anim.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] }),
+            },
+          ],
+          opacity: anim,
+        },
+      ]}
+    >
+      <TouchableOpacity
+        activeOpacity={0.8}
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+          onPress();
+        }}
+        style={styles.signBoard}
+      >
+        <Text style={styles.signIcon}>{icon}</Text>
+        <Text style={styles.signLabel}>{label}</Text>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+};
+
+export default function PathScreen({ navigation }) {
+  // 숨겨진 통로: 하단 문구를 길게 누르면 학칙이 있는 첫 화면으로 되돌아간다.
+  const secretGlow = useRef(new Animated.Value(0)).current;
+
+  const enterSecretGate = () => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    Animated.sequence([
+      Animated.timing(secretGlow, { toValue: 1, duration: 220, useNativeDriver: false }),
+      Animated.timing(secretGlow, { toValue: 0, duration: 220, useNativeDriver: false }),
+    ]).start(() => {
+      navigation.navigate('Home');
+    });
+  };
+
+  const footerColor = secretGlow.interpolate({
+    inputRange: [0, 1],
+    outputRange: [colors.textMuted, colors.goldBright],
+  });
+
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
+      <View style={{ flex: 1 }}>
+        <LinearGradient colors={colors.bgGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.gradient}>
+          <View style={styles.header}>
+            <Text style={styles.title}>어느 길로 향하시겠습니까</Text>
+            <Text style={styles.subtitle}>두 갈래 흙길이 아카데미아 깊은 곳으로 이어집니다</Text>
+          </View>
+
+          <View style={styles.illustration}>
+            <View style={styles.roadFork}>
+              <View style={styles.roadTrunk} />
+              <View style={styles.forkJoint} />
+              <View style={[styles.roadBranch, styles.branchLeft]} />
+              <View style={[styles.roadBranch, styles.branchRight]} />
+              
+              {/* Center guide lines */}
+              <View style={styles.trunkLine} />
+              <View style={[styles.branchLine, styles.branchLineLeft]} />
+              <View style={[styles.branchLine, styles.branchLineRight]} />
+            </View>
+
+            <View style={styles.pole} />
+
+            <Sign
+              label="메이커"
+              icon="🔨"
+              rotate={-10}
+              offsetX={-64}
+              delay={100}
+              onPress={() => navigation.navigate('MakerFeed')}
+            />
+            <Sign
+              label="일상"
+              icon="🕊️"
+              rotate={10}
+              offsetX={64}
+              delay={280}
+              onPress={() => navigation.navigate('Feed')}
+            />
+          </View>
+
+          <Pressable
+            onLongPress={enterSecretGate}
+            delayLongPress={2000}
+            style={({ pressed }) => [styles.footerNoteWrap, pressed && styles.footerNotePressed]}
+          >
+            <Animated.Text style={[styles.footerNote, { color: footerColor }]}>
+              선택한 길은 언제든 다시 되돌아올 수 있습니다.
+            </Animated.Text>
+          </Pressable>
+        </LinearGradient>
+      </View>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: colors.bg,
+  },
+  gradient: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  title: {
+    fontFamily: fonts.display,
+    fontSize: 22,
+    color: colors.textPrimary,
+    textAlign: 'center',
+    letterSpacing: 0.5,
+  },
+  subtitle: {
+    fontFamily: fonts.bodySerif,
+    fontSize: 13.5,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginTop: 10,
+    lineHeight: 20,
+  },
+  illustration: {
+    height: 300,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    marginVertical: 20,
+  },
+  roadFork: {
+    position: 'absolute',
+    bottom: -10,
+    width: '100%',
+    height: 240,
+    alignItems: 'center',
+    transform: [
+      { perspective: 300 },
+      { rotateX: '60deg' }
+    ],
+  },
+  roadTrunk: {
+    position: 'absolute',
+    bottom: -60,
+    width: 110,
+    height: 180,
+    backgroundColor: '#1E160E',
+    borderLeftWidth: 3,
+    borderRightWidth: 3,
+    borderColor: '#3D2F1D',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+  },
+  forkJoint: {
+    position: 'absolute',
+    bottom: 80,
+    width: 106,
+    height: 106,
+    borderRadius: 53,
+    backgroundColor: '#1E160E',
+    zIndex: 2,
+  },
+  roadBranch: {
+    position: 'absolute',
+    width: 60,
+    height: 220,
+    backgroundColor: '#1E160E',
+    borderLeftWidth: 2,
+    borderRightWidth: 2,
+    borderColor: '#3D2F1D',
+  },
+  branchLeft: {
+    bottom: 100,
+    left: '12%',
+    transform: [{ rotate: '-35deg' }],
+  },
+  branchRight: {
+    bottom: 100,
+    right: '12%',
+    transform: [{ rotate: '35deg' }],
+  },
+  trunkLine: {
+    position: 'absolute',
+    bottom: -60,
+    width: 2,
+    height: 160,
+    backgroundColor: '#6E5536',
+    opacity: 0.6,
+  },
+  branchLine: {
+    position: 'absolute',
+    width: 2,
+    height: 180,
+    backgroundColor: '#6E5536',
+    opacity: 0.6,
+  },
+  branchLineLeft: {
+    bottom: 110,
+    left: '26%',
+    transform: [{ rotate: '-35deg' }],
+  },
+  branchLineRight: {
+    bottom: 110,
+    right: '26%',
+    transform: [{ rotate: '35deg' }],
+  },
+  pole: {
+    position: 'absolute',
+    bottom: 26,
+    width: 10,
+    height: 96,
+    borderRadius: 4,
+    backgroundColor: colors.border,
+  },
+  signWrap: {
+    position: 'absolute',
+    bottom: 96,
+  },
+  signBoard: {
+    width: 118,
+    paddingVertical: 16,
+    borderRadius: 8,
+    backgroundColor: colors.surface,
+    borderWidth: 1.5,
+    borderColor: colors.gold,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  signIcon: {
+    fontSize: 22,
+    marginBottom: 6,
+  },
+  signLabel: {
+    fontFamily: fonts.title,
+    fontSize: 14.5,
+    color: colors.goldBright,
+    letterSpacing: 0.5,
+  },
+  footerNoteWrap: {
+    alignSelf: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+  },
+  footerNotePressed: {
+    opacity: 0.6,
+  },
+  footerNote: {
+    fontSize: 11.5,
+    color: colors.textMuted,
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
+});
