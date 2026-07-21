@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useCallback } from 'react';
 import {
   StyleSheet,
   View,
@@ -8,9 +8,12 @@ import {
   StatusBar,
   Animated,
   Easing,
+  BackHandler,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
+import ScreenContainer from '../components/ScreenContainer';
 import { fonts } from '../theme';
 
 const RULES = [
@@ -93,6 +96,18 @@ export default function HomeScreen({ navigation }) {
   const entrance = useRef(new Animated.Value(0)).current;
   const ruleAnims = useRef(RULES.map(() => new Animated.Value(0))).current;
 
+  // 앱인토스 가이드: 첫 화면에서 뒤로가기 → 미니앱 종료
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        BackHandler.exitApp();
+        return true;
+      };
+      const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+      return () => subscription.remove();
+    }, [])
+  );
+
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
@@ -144,7 +159,7 @@ export default function HomeScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <ScreenContainer style={styles.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
       <LinearGradient
         colors={['#241A0D', '#120E08', '#1A1410']}
@@ -244,7 +259,7 @@ export default function HomeScreen({ navigation }) {
           </Text>
         </ScrollView>
       </LinearGradient>
-    </SafeAreaView>
+    </ScreenContainer>
   );
 }
 

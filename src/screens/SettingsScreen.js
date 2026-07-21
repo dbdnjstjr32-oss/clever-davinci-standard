@@ -1,6 +1,7 @@
-import React, { useCallback } from 'react';
+﻿import React, { useCallback } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, StatusBar, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import ScreenContainer from '../components/ScreenContainer';
 import * as Haptics from 'expo-haptics';
 import { useStoreState, store } from '../data';
 import { colors, fonts } from '../theme';
@@ -59,7 +60,7 @@ export default function SettingsScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <ScreenContainer style={styles.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
 
       <View style={styles.header}>
@@ -93,7 +94,7 @@ export default function SettingsScreen({ navigation }) {
           </View>
         </View>
       </View>
-    </SafeAreaView>
+    </ScreenContainer>
   );
 }
 
@@ -177,3 +178,4 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
 });
+

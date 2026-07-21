@@ -14,6 +14,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { useStoreState, store } from '../data';
 import { colors, fonts, radius } from '../theme';
+import ScreenContainer from '../components/ScreenContainer';
 
 const REACTIONS = ['👑', '🏺', '🧪', '🕯️'];
 
@@ -134,7 +135,7 @@ export default function MakerFeedScreen({ navigation }) {
   );
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <ScreenContainer style={styles.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
 
       <BlurView intensity={40} tint="dark" style={styles.header}>
@@ -180,7 +181,7 @@ export default function MakerFeedScreen({ navigation }) {
           contentContainerStyle={styles.listContent}
         />
       )}
-    </SafeAreaView>
+    </ScreenContainer>
   );
 }
 

@@ -15,6 +15,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { useStoreState, store } from '../data';
 import { colors, fonts, radius } from '../theme';
+import ScreenContainer from '../components/ScreenContainer';
 
 const REACTIONS = ['👑', '🏺', '🧪', '🕯️'];
 
@@ -77,8 +78,10 @@ export default function FeedScreen({ navigation }) {
   const { height: windowHeight } = Dimensions.get('window');
   const HEADER_HEIGHT = 60;
   const MY_FAILURE_BAR_HEIGHT = 62;
+  const safeOffset = Platform.OS === 'ios' ? 44 : 0;
+  // 웹에서는 Dimensions height가 viewport 높이와 다를 수 있어 useWindowDimensions 사용
   const ITEM_HEIGHT =
-    windowHeight - HEADER_HEIGHT - MY_FAILURE_BAR_HEIGHT - (Platform.OS === 'ios' ? 44 : 0);
+    windowHeight - HEADER_HEIGHT - MY_FAILURE_BAR_HEIGHT - safeOffset;
   const scrollY = useRef(new Animated.Value(0)).current;
 
   const handleMomentumEnd = e => {
@@ -207,7 +210,7 @@ export default function FeedScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <ScreenContainer style={styles.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
 
       <BlurView intensity={40} tint="dark" style={styles.header}>
@@ -267,7 +270,7 @@ export default function FeedScreen({ navigation }) {
           scrollEventThrottle={16}
         />
       )}
-    </SafeAreaView>
+    </ScreenContainer>
   );
 }
 

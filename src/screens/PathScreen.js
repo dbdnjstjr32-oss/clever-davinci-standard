@@ -4,8 +4,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { colors, fonts } from '../theme';
+import ScreenContainer from '../components/ScreenContainer';
 
-const Sign = ({ label, icon, rotate, offsetX, onPress, delay }) => {
+const Sign = ({ label, icon, rotate, onPress, delay }) => {
   const anim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -24,7 +25,6 @@ const Sign = ({ label, icon, rotate, offsetX, onPress, delay }) => {
         styles.signWrap,
         {
           transform: [
-            { translateX: offsetX },
             { rotate: `${rotate}deg` },
             {
               scale: anim.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] }),
@@ -69,7 +69,7 @@ export default function PathScreen({ navigation }) {
   });
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <ScreenContainer style={styles.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
       <View style={{ flex: 1 }}>
         <LinearGradient colors={colors.bgGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.gradient}>
@@ -79,36 +79,23 @@ export default function PathScreen({ navigation }) {
           </View>
 
           <View style={styles.illustration}>
-            <View style={styles.roadFork}>
-              <View style={styles.roadTrunk} />
-              <View style={styles.forkJoint} />
-              <View style={[styles.roadBranch, styles.branchLeft]} />
-              <View style={[styles.roadBranch, styles.branchRight]} />
-              
-              {/* Center guide lines */}
-              <View style={styles.trunkLine} />
-              <View style={[styles.branchLine, styles.branchLineLeft]} />
-              <View style={[styles.branchLine, styles.branchLineRight]} />
-            </View>
-
             <View style={styles.pole} />
-
-            <Sign
-              label="메이커"
-              icon="🔨"
-              rotate={-10}
-              offsetX={-64}
-              delay={100}
-              onPress={() => navigation.navigate('MakerFeed')}
-            />
-            <Sign
-              label="일상"
-              icon="🕊️"
-              rotate={10}
-              offsetX={64}
-              delay={280}
-              onPress={() => navigation.navigate('Feed')}
-            />
+            <View style={styles.signRow}>
+              <Sign
+                label="메이커"
+                icon="🔨"
+                rotate={-6}
+                delay={100}
+                onPress={() => navigation.navigate('MakerFeed')}
+              />
+              <Sign
+                label="일상"
+                icon="🕊️"
+                rotate={6}
+                delay={280}
+                onPress={() => navigation.navigate('Feed')}
+              />
+            </View>
           </View>
 
           <Pressable
@@ -122,7 +109,7 @@ export default function PathScreen({ navigation }) {
           </Pressable>
         </LinearGradient>
       </View>
-    </SafeAreaView>
+    </ScreenContainer>
   );
 }
 
@@ -156,10 +143,16 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   illustration: {
-    height: 300,
     alignItems: 'center',
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
     marginVertical: 20,
+    minHeight: 200,
+  },
+  signRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 32,
+    marginTop: 20,
   },
   roadFork: {
     position: 'absolute',
@@ -246,8 +239,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.border,
   },
   signWrap: {
-    position: 'absolute',
-    bottom: 96,
+    alignItems: 'center',
   },
   signBoard: {
     width: 118,

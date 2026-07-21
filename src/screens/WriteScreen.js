@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import {
   StyleSheet,
   View,
@@ -12,6 +12,7 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import ScreenContainer from '../components/ScreenContainer';
 import * as Haptics from 'expo-haptics';
 import { store } from '../data';
 import { colors, fonts } from '../theme';
@@ -46,7 +47,7 @@ export default function WriteScreen({ navigation, route }) {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <ScreenContainer style={styles.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
       <KeyboardAvoidingView style={styles.keyboardView} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={styles.header}>
@@ -97,7 +98,7 @@ export default function WriteScreen({ navigation, route }) {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </ScreenContainer>
   );
 }
 
@@ -201,3 +202,4 @@ const styles = StyleSheet.create({
     borderRadius: 1,
   },
 });
+

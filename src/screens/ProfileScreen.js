@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+﻿import React, { useState, useCallback } from 'react';
 import {
   StyleSheet,
   View,
@@ -10,6 +10,7 @@ import {
   TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import ScreenContainer from '../components/ScreenContainer';
 import { useStoreState, store } from '../data';
 import { colors, fonts } from '../theme';
 
@@ -34,7 +35,7 @@ export default function ProfileScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <ScreenContainer style={styles.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
 
       <View style={styles.header}>
@@ -138,7 +139,7 @@ export default function ProfileScreen({ navigation }) {
           )}
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </ScreenContainer>
   );
 }
 
@@ -323,3 +324,4 @@ const styles = StyleSheet.create({
     color: colors.goldDim,
   },
 });
+

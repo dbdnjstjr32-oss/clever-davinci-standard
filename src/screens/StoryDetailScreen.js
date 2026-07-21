@@ -17,6 +17,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { useStoreState, store } from '../data';
 import { colors, fonts, radius } from '../theme';
+import ScreenContainer from '../components/ScreenContainer';
 
 const REACTIONS = [
   { emoji: '👑', label: '왕관' },
@@ -110,7 +111,7 @@ export default function StoryDetailScreen({ route, navigation }) {
   const accession = accessionOf(id);
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <ScreenContainer style={styles.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
       <KeyboardAvoidingView style={styles.keyboardView} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         {/* 전시실 조명(스포트라이트) 워시 */}
@@ -250,7 +251,7 @@ export default function StoryDetailScreen({ route, navigation }) {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </ScreenContainer>
   );
 }
 

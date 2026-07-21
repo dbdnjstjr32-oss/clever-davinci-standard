@@ -40,7 +40,6 @@ export const radius = {
 
 export const fontAssets = {
   NotoSerifKR_400Regular: require('@expo-google-fonts/noto-serif-kr/400Regular/NotoSerifKR_400Regular.ttf'),
-  NotoSerifKR_500Medium: require('@expo-google-fonts/noto-serif-kr/500Medium/NotoSerifKR_500Medium.ttf'),
   NotoSerifKR_600SemiBold: require('@expo-google-fonts/noto-serif-kr/600SemiBold/NotoSerifKR_600SemiBold.ttf'),
   NotoSerifKR_700Bold: require('@expo-google-fonts/noto-serif-kr/700Bold/NotoSerifKR_700Bold.ttf'),
 };

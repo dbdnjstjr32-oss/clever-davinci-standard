@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "dependencies": {
+    "@apps-in-toss/web-framework": "^2.10.6",
     "@expo-google-fonts/noto-serif-kr": "^0.4.3",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-navigation/native": "^7.3.7",
@@ -24,9 +25,12 @@
   },
   "scripts": {
     "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
-    "web": "expo start --web"
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "web": "expo start --web",
+    "dev": "granite dev",
+    "build": "ait build",
+    "deploy": "ait deploy"
   },
   "private": true,
   "devDependencies": {

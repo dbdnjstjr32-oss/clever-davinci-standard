@@ -6,7 +6,7 @@ import * as NavigationBar from 'expo-navigation-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import * as SystemUI from 'expo-system-ui';
 import { useFonts } from 'expo-font';
-import { Platform } from 'react-native';
+import { Platform, BackHandler } from 'react-native';
 import { fontAssets, colors } from './src/theme';
 import { useHydrated } from './src/data';
 import HomeScreen from './src/screens/HomeScreen';
@@ -27,8 +27,6 @@ export default function App() {
   const [fontsLoaded] = useFonts(fontAssets);
   const storeHydrated = useHydrated();
   const ready = fontsLoaded && storeHydrated;
-
-  console.log('[App.js] ready status:', { fontsLoaded, storeHydrated, ready });
 
   useEffect(() => {
     if (Platform.OS === 'android') {
