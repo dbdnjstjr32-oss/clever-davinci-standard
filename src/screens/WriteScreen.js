@@ -9,7 +9,6 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
-  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ScreenContainer from '../components/ScreenContainer';
@@ -17,6 +16,7 @@ import * as Haptics from 'expo-haptics';
 import { store } from '../data';
 import { colors, fonts } from '../theme';
 import { useTossBackGuard } from '../hooks/useTossBackGuard';
+import { confirmDialog, infoDialog } from '../utils/alert';
 
 const AVAILABLE_TAGS = ['토론폭망', '변론실패', '증명실패', '오답노트', '일상폭망', '인간관계'];
 
@@ -29,17 +29,12 @@ export default function WriteScreen({ navigation, route }) {
 
   const confirmLeave = useCallback(() => {
     if (hasUnsavedChanges) {
-      Alert.alert(
+      confirmDialog(
         '작성 취소',
         '작성 중인 내용이 저장되지 않아요. 나가시겠어요?',
-        [
-          { text: '취소', style: 'cancel' },
-          {
-            text: '나가기',
-            style: 'destructive',
-            onPress: () => navigation.goBack(),
-          },
-        ]
+        '나가기',
+        () => navigation.goBack(),
+        { destructive: true }
       );
       return true;
     }
@@ -52,7 +47,7 @@ export default function WriteScreen({ navigation, route }) {
     Haptics.selectionAsync().catch(() => {});
     if (selectedTags.includes(tag)) {
       if (selectedTags.length === 1) {
-        Alert.alert('알림', '최소 하나의 태그는 선택해야 합니다.');
+        infoDialog('알림', '최소 하나의 태그는 선택해야 합니다.');
         return;
       }
       setSelectedTags(selectedTags.filter(t => t !== tag));
@@ -63,7 +58,7 @@ export default function WriteScreen({ navigation, route }) {
 
   const handleSave = () => {
     if (!content.trim()) {
-      Alert.alert('알림', '내용을 입력해 주세요.');
+      infoDialog('알림', '내용을 입력해 주세요.');
       return;
     }
     store.addPost(content, selectedTags, category);

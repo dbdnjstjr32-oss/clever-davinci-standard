@@ -242,7 +242,7 @@ function DevFallback({ busy, setBusy, error, setError }) {
       if (mode === 'signUp') await store.signUp(email.trim(), password);
       else await store.signIn(email.trim(), password);
     } catch (err) {
-      setError(err?.message || '오류가 발생했습니다.');
+      setError(describeError(err));
     } finally {
       setBusy(false);
     }

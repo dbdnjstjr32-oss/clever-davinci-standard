@@ -17,7 +17,11 @@ import { useStoreState, store } from '../data';
 import { colors, fonts, radius } from '../theme';
 import ScreenContainer from '../components/ScreenContainer';
 import DoroScholar from '../components/DoroScholar';
+import ObserverGateCard from '../components/ObserverGateCard';
 import { checkObserverGuard } from '../hooks/useObserverGuard';
+
+const OBSERVER_POST_LIMIT = 10;
+const GATE_ITEM = { id: '__observer_gate__', __gate: true };
 
 const REACTIONS = ['👑', '🏺', '🧪', '🕯️'];
 
@@ -114,6 +118,11 @@ export default function FeedScreen({ navigation }) {
   const posts = useStoreState(getPosts);
   const getCurrentUser = React.useCallback(() => store.getCurrentUser(), []);
   const currentUser = useStoreState(getCurrentUser);
+  const isObserver = useStoreState(() => store.isObserver());
+
+  const visiblePosts = isObserver ? posts.slice(0, OBSERVER_POST_LIMIT) : posts;
+  const hasMoreBehindGate = isObserver && posts.length > OBSERVER_POST_LIMIT;
+  const listData = hasMoreBehindGate ? [...visiblePosts, GATE_ITEM] : visiblePosts;
 
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -141,6 +150,14 @@ export default function FeedScreen({ navigation }) {
   };
 
   const renderItem = ({ item: post, index }) => {
+    if (post.__gate) {
+      return (
+        <View style={[styles.card, { height: ITEM_HEIGHT, justifyContent: 'center' }]}>
+          <ObserverGateCard navigation={navigation} remaining={posts.length - OBSERVER_POST_LIMIT} />
+        </View>
+      );
+    }
+
     const total = REACTIONS.reduce((sum, e) => sum + (post.reactions[e] || 0), 0);
     const grade = getGrade(total);
     const appraisal = total >= 90 ? '값을 매길 수 없음' : `₩ ${formatWon(total * 137000 + 42000)}`;
@@ -195,7 +212,7 @@ export default function FeedScreen({ navigation }) {
               activeOpacity={0.7}
               onPress={() => navigation.navigate('StoryDetail', { id: post.id })}
             >
-              <Text style={styles.artworkContent} numberOfLines={5}>
+              <Text style={styles.artworkContent} numberOfLines={3}>
                 {post.content}
               </Text>
               <Text style={styles.readMoreLabel}>전체 실패담 더 보기 →</Text>
@@ -300,7 +317,7 @@ export default function FeedScreen({ navigation }) {
           </View>
         ) : (
           <Animated.FlatList
-            data={posts}
+            data={listData}
             renderItem={renderItem}
             keyExtractor={item => item.id}
             pagingEnabled
@@ -630,7 +647,7 @@ const styles = StyleSheet.create({
   reactionRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: -30,
+    marginTop: 0,
     marginBottom: 14,
   },
   reactionItem: {

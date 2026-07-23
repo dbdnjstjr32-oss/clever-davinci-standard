@@ -15,8 +15,11 @@ import * as Haptics from 'expo-haptics';
 import { useStoreState, store } from '../data';
 import { colors, fonts, radius } from '../theme';
 import ScreenContainer from '../components/ScreenContainer';
-import DoroScholar from '../components/DoroScholar';
+import BlacksmithScholar from '../components/BlacksmithScholar';
+import ObserverGateCard from '../components/ObserverGateCard';
 import { checkObserverGuard } from '../hooks/useObserverGuard';
+
+const OBSERVER_POST_LIMIT = 10;
 
 const REACTIONS = ['👑', '🏺', '🧪', '🕯️'];
 
@@ -39,7 +42,7 @@ const AnimatedReaction = ({ emoji, count, onPress }) => {
   );
 };
 
-const FeedCard = ({ post, commentCount, index, onOpenDetail, onReact }) => {
+const FeedCard = ({ post, index, onOpenDetail, onReact }) => {
   const anim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -85,7 +88,7 @@ const FeedCard = ({ post, commentCount, index, onOpenDetail, onReact }) => {
       </View>
 
       <View style={styles.cardBody}>
-        <Text style={styles.cardContent} numberOfLines={6}>
+        <Text style={styles.cardContent} numberOfLines={3}>
           {post.content}
         </Text>
         <View style={styles.tagChipRow}>
@@ -114,7 +117,6 @@ const FeedCard = ({ post, commentCount, index, onOpenDetail, onReact }) => {
             />
           ))}
         </View>
-        <Text style={styles.commentCount}>💬 {commentCount}</Text>
       </View>
     </Animated.View>
   );
@@ -125,11 +127,14 @@ export default function MakerFeedScreen({ navigation }) {
   const posts = useStoreState(getPosts);
   const getCurrentUser = React.useCallback(() => store.getCurrentUser(), []);
   const currentUser = useStoreState(getCurrentUser);
+  const isObserver = useStoreState(() => store.isObserver());
+
+  const visiblePosts = isObserver ? posts.slice(0, OBSERVER_POST_LIMIT) : posts;
+  const hasMoreBehindGate = isObserver && posts.length > OBSERVER_POST_LIMIT;
 
   const renderItem = ({ item: post, index }) => (
     <FeedCard
       post={post}
-      commentCount={post.commentCount || 0}
       index={index}
       onOpenDetail={id => navigation.navigate('StoryDetail', { id })}
       onReact={(id, emoji) =>
@@ -183,16 +188,21 @@ export default function MakerFeedScreen({ navigation }) {
         </View>
       ) : (
         <FlatList
-          data={posts}
+          data={visiblePosts}
           renderItem={renderItem}
           keyExtractor={item => item.id}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.listContent}
           ListHeaderComponent={() => (
             <View style={{ alignItems: 'center', marginBottom: 16 }}>
-              <DoroScholar width={160} height={87} filterScale={7.5} />
+              <BlacksmithScholar width={170} height={117} filterScale={7.5} />
             </View>
           )}
+          ListFooterComponent={
+            hasMoreBehindGate ? (
+              <ObserverGateCard navigation={navigation} remaining={posts.length - OBSERVER_POST_LIMIT} />
+            ) : null
+          }
         />
       )}
     </ScreenContainer>
@@ -469,9 +479,5 @@ const styles = StyleSheet.create({
   reactionCountActive: {
     color: colors.gold,
     fontFamily: fonts.title,
-  },
-  commentCount: {
-    fontSize: 13,
-    color: colors.textMuted,
   },
 });

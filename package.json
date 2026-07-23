@@ -33,7 +33,8 @@
     "web": "expo start --web",
     "dev": "granite dev --port 8081 --host 0.0.0.0",
     "build": "ait build",
-    "deploy": "ait deploy"
+    "deploy": "ait deploy",
+    "reload:device": "node scripts/reload-device.js"
   },
   "private": true,
   "devDependencies": {

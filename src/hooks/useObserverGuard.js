@@ -1,5 +1,5 @@
-import { Alert } from 'react-native';
 import { store } from '../data';
+import { confirmDialog } from '../utils/alert';
 
 /**
  * 👁️ 관찰자 모드 권한 가드 (Observer Permission Guard)
@@ -14,19 +14,14 @@ export function checkObserverGuard(navigation, actionType, onProceed) {
       profile: '관찰자 모드에서는 프로필을 열람할 수 없습니다.',
     };
 
-    Alert.alert(
+    confirmDialog(
       '관찰자 모드 (읽기 전용)',
       `${messages[actionType] || '관찰자 모드에서는 읽기만 가능합니다.'}\n토스로 로그인하고 참여해보세요!`,
-      [
-        { text: '취소', style: 'cancel' },
-        {
-          text: '토스로 로그인',
-          onPress: () => {
-            store.exitObserver();
-            navigation.navigate('Auth');
-          },
-        },
-      ]
+      '토스로 로그인',
+      () => {
+        store.exitObserver();
+        navigation.navigate('Auth');
+      }
     );
     return false;
   }

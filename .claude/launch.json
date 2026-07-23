@@ -4,14 +4,21 @@
     {
       "name": "expo-web",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["expo", "start", "--web", "--port", "8082"],
-      "port": 8082
+      "runtimeArgs": ["expo", "start", "--web"],
+      "port": 8082,
+      "autoPort": true
     },
     {
       "name": "assets-static",
       "runtimeExecutable": "npx",
       "runtimeArgs": ["serve", "-l", "4173", "C:/Users/dbdnj/Desktop/academia-atelier-toss/assets-src"],
       "port": 4173
+    },
+    {
+      "name": "granite-dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 8081
     }
   ]
 }

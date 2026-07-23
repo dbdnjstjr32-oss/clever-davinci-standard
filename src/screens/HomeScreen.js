@@ -9,7 +9,6 @@ import {
   Animated,
   Easing,
   BackHandler,
-  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -256,24 +255,6 @@ export default function HomeScreen({ navigation }) {
             아카데미아의 문은 실패한 모든 이에게 열려 있습니다.
           </Text>
         </ScrollView>
-
-        <View style={styles.fixedBottomBar}>
-          <TouchableOpacity
-            style={styles.ctaButton}
-            activeOpacity={0.85}
-            onPress={() => navigation.navigate((store.isSignedIn() || store.isObserver()) ? 'Path' : 'Auth')}
-          >
-            <LinearGradient
-              colors={['#E8D5A8', '#C5A880', '#A8875A']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.ctaGradient}
-            >
-              <Text style={styles.ctaText}>입학하기</Text>
-              <Text style={styles.ctaArrow}>→</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-        </View>
       </LinearGradient>
     </ScreenContainer>
   );
@@ -296,7 +277,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 24,
     paddingTop: 16,
-    paddingBottom: 110,
+    paddingBottom: 40,
   },
   emblemWrap: {
     alignItems: 'center',
@@ -440,29 +421,6 @@ const styles = StyleSheet.create({
   ctaButtonInScroll: {
     width: '100%',
     marginTop: 28,
-    borderRadius: 14,
-    overflow: 'hidden',
-    shadowColor: '#C5A880',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 10,
-  },
-  fixedBottomBar: {
-    position: Platform.OS === 'web' ? 'fixed' : 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    zIndex: 9999,
-    elevation: 9999,
-    paddingHorizontal: 24,
-    paddingTop: 12,
-    paddingBottom: 24,
-    backgroundColor: 'rgba(18, 14, 8, 0.92)',
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(197, 168, 128, 0.25)',
-  },
-  ctaButton: {
     borderRadius: 14,
     overflow: 'hidden',
     shadowColor: '#C5A880',
