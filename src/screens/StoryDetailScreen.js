@@ -18,6 +18,7 @@ import * as Haptics from 'expo-haptics';
 import { useStoreState, store } from '../data';
 import { colors, fonts, radius } from '../theme';
 import ScreenContainer from '../components/ScreenContainer';
+import { checkObserverGuard } from '../hooks/useObserverGuard';
 
 const REACTIONS = [
   { emoji: '👑', label: '왕관' },
@@ -103,9 +104,11 @@ export default function StoryDetailScreen({ route, navigation }) {
 
   const handleAddComment = () => {
     if (!commentText.trim()) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    store.addComment(id, commentText.trim());
-    setCommentText('');
+    checkObserverGuard(navigation, 'comment', () => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+      store.addComment(id, commentText.trim());
+      setCommentText('');
+    });
   };
 
   const accession = accessionOf(id);
@@ -194,8 +197,10 @@ export default function StoryDetailScreen({ route, navigation }) {
                       key={emoji}
                       activeOpacity={0.7}
                       onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-                        store.reactToPost(post.id, emoji);
+                        checkObserverGuard(navigation, 'react', () => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+                          store.reactToPost(post.id, emoji);
+                        });
                       }}
                       style={styles.reactionItem}
                     >
@@ -309,7 +314,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: colors.goldDim,
     letterSpacing: 1,
-    marginTop: -10,
+    marginTop: 4,
   },
   headerRightPlaceholder: {
     width: 40,

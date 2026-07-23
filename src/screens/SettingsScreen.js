@@ -1,11 +1,25 @@
 ﻿import React, { useCallback } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, StatusBar, Alert } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, StatusBar, Alert, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ScreenContainer from '../components/ScreenContainer';
 import * as Haptics from 'expo-haptics';
 import { useStoreState, store } from '../data';
 import { colors, fonts } from '../theme';
 import appJson from '../../app.json';
+
+// react-native-web's Alert.alert doesn't render anything for the
+// title/message/buttons form, so multi-button confirmations need a web
+// fallback - window.confirm() is the simplest equivalent there.
+function confirmAction(title, message, confirmLabel, onConfirm) {
+  if (Platform.OS === 'web') {
+    if (window.confirm(`${title}\n\n${message}`)) onConfirm();
+    return;
+  }
+  Alert.alert(title, message, [
+    { text: '취소', style: 'cancel' },
+    { text: confirmLabel, style: 'destructive', onPress: onConfirm },
+  ]);
+}
 
 const SettingsRow = ({ label, value, onPress, danger }) => (
   <TouchableOpacity
@@ -29,34 +43,17 @@ export default function SettingsScreen({ navigation }) {
   const currentUser = useStoreState(getCurrentUser);
 
   const handleRandomizeNickname = () => {
-    Alert.alert('닉네임 변경', '새로운 익명 닉네임을 받으시겠습니까?', [
-      { text: '취소', style: 'cancel' },
-      {
-        text: '변경',
-        onPress: () => {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-          store.randomizeNickname();
-        },
-      },
-    ]);
+    confirmAction('닉네임 변경', '새로운 익명 닉네임을 받으시겠습니까?', '변경', () => {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      store.randomizeNickname();
+    });
   };
 
-  const handleResetData = () => {
-    Alert.alert(
-      '전체 데이터 초기화',
-      '작성한 스토리, 댓글, 소개글이 모두 초기 상태로 되돌아갑니다. 계속하시겠습니까?',
-      [
-        { text: '취소', style: 'cancel' },
-        {
-          text: '초기화',
-          style: 'destructive',
-          onPress: () => {
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
-            store.resetAllData();
-          },
-        },
-      ]
-    );
+  const handleSignOut = () => {
+    confirmAction('로그아웃', '아카데미아에서 로그아웃하시겠습니까?', '로그아웃', () => {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      store.signOut();
+    });
   };
 
   return (
@@ -77,9 +74,9 @@ export default function SettingsScreen({ navigation }) {
           <SettingsRow label="닉네임 변경" value={currentUser.name} onPress={handleRandomizeNickname} />
         </View>
 
-        <Text style={styles.sectionLabel}>데이터</Text>
+        <Text style={styles.sectionLabel}>계정 관리</Text>
         <View style={styles.card}>
-          <SettingsRow label="전체 데이터 초기화" onPress={handleResetData} danger />
+          <SettingsRow label="로그아웃" onPress={handleSignOut} danger />
         </View>
 
         <Text style={styles.sectionLabel}>정보</Text>

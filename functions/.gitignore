@@ -1,0 +1,7 @@
+node_modules/
+npm-debug.log
+*.local
+.env
+# Never commit mTLS certificate material
+*.pem
+*.key

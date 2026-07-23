@@ -42,4 +42,6 @@ yarn-error.*
 
 .granite
 
-.granite
+*.png_screen*
+device_screen*.png
+device_screenshot.png

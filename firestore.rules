@@ -1,0 +1,199 @@
+rules_version = '2';
+
+// ===============================================================
+// Assumed Data Model
+// ===============================================================
+//
+// Collection: users
+// Document ID: {uid} (Firebase Auth uid; for Toss-login users, `toss_<userKey>`)
+// Fields:
+//   - email: string, '' or a valid email (required key, immutable, PII ->
+//     owner-read-only). Toss-login users have no email, so '' is allowed.
+//   - nickname: string, 1-50 chars (required) - display name shown on posts/comments
+//   - avatar: string, 1-10 chars (required) - single-letter/emoji avatar seed
+//   - bio: string, 0-200 chars (required)
+//   - gemsFound: int >= 0 (required) - vanity counter, owner-controlled only
+//   - createdAt: timestamp (required, immutable)
+//
+// Collection: posts
+// Document ID: auto-generated
+// Fields:
+//   - category: string, one of ['maker','daily'] (required, immutable)
+//   - authorUid: string == owner's uid (required, immutable)
+//   - authorName: string, 1-50 chars (required, immutable) - denormalized from users/{uid}.nickname at creation
+//   - authorAvatar: string, 1-10 chars (required, immutable) - denormalized from users/{uid}.avatar at creation
+//   - content: string, 1-1000 chars (required, immutable)
+//   - tags: list of strings, 1-6 items (required, immutable)
+//   - createdAt: timestamp == request.time at creation (required, immutable)
+//   - reactions: map with exactly the 4 fixed emoji keys -> non-negative int counters
+//     (mutable ONLY by any authenticated user, one unit at a time, no other field changes)
+//   - commentCount: int >= 0 (required) - denormalized count of the comments
+//     subcollection, so list views can show a count without reading every
+//     comment. Mutable ONLY as +1 per write (paired with a comment create).
+//
+// Subcollection: posts/{postId}/comments
+// Document ID: auto-generated
+// Fields:
+//   - authorUid, authorName, authorAvatar, content (1-500 chars), createdAt
+//   - Same rules as posts fields above; fully immutable after creation.
+//
+// Subcollection: posts/{postId}/reactionMarks
+// Document ID: {uid} (one doc per user per post)
+// Fields:
+//   - '👑': bool, '🏺': bool, '🧪': bool, '🕯️': bool (all required)
+//   - Tracks which of the 4 reactions the owning user currently has active on
+//     this post. Private to its owner (used to render "my reaction" state and
+//     to prevent a user from double-toggling the same emoji).
+//
+// ===============================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------------------------------------------------------
+    // Helper functions
+    // ---------------------------------------------------------
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isAuthenticated() && request.auth.uid == uid;
+    }
+
+    function isValidEmail(email) {
+      return email is string &&
+        email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function reactionKeys() {
+      return ['👑', '🏺', '🧪', '🕯️'];
+    }
+
+    function isValidReactionsMap(m) {
+      return m is map &&
+        m.keys().hasOnly(reactionKeys()) &&
+        m.keys().hasAll(reactionKeys()) &&
+        m['👑'] is int && m['👑'] >= 0 &&
+        m['🏺'] is int && m['🏺'] >= 0 &&
+        m['🧪'] is int && m['🧪'] >= 0 &&
+        m['🕯️'] is int && m['🕯️'] >= 0;
+    }
+
+    // ---------------------------------------------------------
+    // users/{uid}
+    // ---------------------------------------------------------
+    function isValidUser(data) {
+      return data.keys().hasOnly(['email', 'nickname', 'avatar', 'bio', 'gemsFound', 'createdAt']) &&
+        data.keys().hasAll(['email', 'nickname', 'avatar', 'bio', 'gemsFound', 'createdAt']) &&
+        data.email is string && (data.email == '' || isValidEmail(data.email)) && data.email.size() <= 254 &&
+        data.nickname is string && data.nickname.size() > 0 && data.nickname.size() <= 50 &&
+        data.avatar is string && data.avatar.size() > 0 && data.avatar.size() <= 10 &&
+        data.bio is string && data.bio.size() <= 200 &&
+        data.gemsFound is int && data.gemsFound >= 0 &&
+        data.createdAt is timestamp;
+    }
+
+    match /users/{uid} {
+      allow read: if isOwner(uid);
+      allow create: if isOwner(uid) &&
+        isValidUser(request.resource.data) &&
+        request.resource.data.createdAt == request.time;
+      allow update: if isOwner(uid) &&
+        isValidUser(request.resource.data) &&
+        request.resource.data.email == resource.data.email &&
+        request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if false;
+    }
+
+    // ---------------------------------------------------------
+    // posts/{postId}
+    // ---------------------------------------------------------
+    function isValidPost(data) {
+      return data.keys().hasOnly(['category', 'authorUid', 'authorName', 'authorAvatar', 'content', 'tags', 'createdAt', 'reactions', 'commentCount']) &&
+        data.keys().hasAll(['category', 'authorUid', 'authorName', 'authorAvatar', 'content', 'tags', 'createdAt', 'reactions', 'commentCount']) &&
+        data.category in ['maker', 'daily'] &&
+        data.authorUid is string && data.authorUid == request.auth.uid &&
+        data.authorName is string && data.authorName.size() > 0 && data.authorName.size() <= 50 &&
+        data.authorAvatar is string && data.authorAvatar.size() > 0 && data.authorAvatar.size() <= 10 &&
+        data.content is string && data.content.size() > 0 && data.content.size() <= 1000 &&
+        data.tags is list && data.tags.size() >= 1 && data.tags.size() <= 6 &&
+        data.tags.join(',').size() <= 120 &&
+        data.createdAt == request.time &&
+        isValidReactionsMap(data.reactions) &&
+        data.reactions['👑'] == 0 && data.reactions['🏺'] == 0 &&
+        data.reactions['🧪'] == 0 && data.reactions['🕯️'] == 0 &&
+        data.commentCount == 0;
+    }
+
+    // Any signed-in user (including the author) may react to a post. Only the
+    // `reactions` map may change, and only by exactly one unit across the 4
+    // counters per write - this bounds how much a single write can move the
+    // total, but (see disclosure to user) does not fully cross-validate
+    // against the paired reactionMarks doc, since Firestore rules can't see
+    // both writes of a client transaction atomically without extra get() cost.
+    function isValidReactionUpdate() {
+      let before = resource.data.reactions;
+      let after = request.resource.data.reactions;
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions']) &&
+        isValidReactionsMap(after) &&
+        (
+          math.abs(after['👑'] - before['👑']) +
+          math.abs(after['🏺'] - before['🏺']) +
+          math.abs(after['🧪'] - before['🧪']) +
+          math.abs(after['🕯️'] - before['🕯️'])
+        ) == 1;
+    }
+
+    // A comment create is always paired (in the same client transaction) with
+    // +1 to the parent post's commentCount. No other field may change.
+    function isValidCommentCountUpdate() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['commentCount']) &&
+        request.resource.data.commentCount is int &&
+        request.resource.data.commentCount == resource.data.commentCount + 1;
+    }
+
+    match /posts/{postId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidPost(request.resource.data);
+      allow update: if isAuthenticated() && (isValidReactionUpdate() || isValidCommentCountUpdate());
+      allow delete: if false;
+
+      // -------------------------------------------------------
+      // posts/{postId}/comments/{commentId}
+      // -------------------------------------------------------
+      function isValidComment(data) {
+        return data.keys().hasOnly(['authorUid', 'authorName', 'authorAvatar', 'content', 'createdAt']) &&
+          data.keys().hasAll(['authorUid', 'authorName', 'authorAvatar', 'content', 'createdAt']) &&
+          data.authorUid is string && data.authorUid == request.auth.uid &&
+          data.authorName is string && data.authorName.size() > 0 && data.authorName.size() <= 50 &&
+          data.authorAvatar is string && data.authorAvatar.size() > 0 && data.authorAvatar.size() <= 10 &&
+          data.content is string && data.content.size() > 0 && data.content.size() <= 500 &&
+          data.createdAt == request.time;
+      }
+
+      match /comments/{commentId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated() && isValidComment(request.resource.data);
+        allow update: if false;
+        allow delete: if false;
+      }
+
+      // -------------------------------------------------------
+      // posts/{postId}/reactionMarks/{uid}
+      // -------------------------------------------------------
+      function isValidReactionMark(data) {
+        return data.keys().hasOnly(reactionKeys()) &&
+          data.keys().hasAll(reactionKeys()) &&
+          data['👑'] is bool && data['🏺'] is bool &&
+          data['🧪'] is bool && data['🕯️'] is bool;
+      }
+
+      match /reactionMarks/{uid} {
+        allow read: if isOwner(uid);
+        allow create, update: if isOwner(uid) && isValidReactionMark(request.resource.data);
+        allow delete: if false;
+      }
+    }
+  }
+}

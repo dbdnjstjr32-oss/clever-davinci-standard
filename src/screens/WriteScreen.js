@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   StyleSheet,
   View,
@@ -16,6 +16,7 @@ import ScreenContainer from '../components/ScreenContainer';
 import * as Haptics from 'expo-haptics';
 import { store } from '../data';
 import { colors, fonts } from '../theme';
+import { useTossBackGuard } from '../hooks/useTossBackGuard';
 
 const AVAILABLE_TAGS = ['토론폭망', '변론실패', '증명실패', '오답노트', '일상폭망', '인간관계'];
 
@@ -23,6 +24,29 @@ export default function WriteScreen({ navigation, route }) {
   const category = route?.params?.category ?? 'daily';
   const [content, setContent] = useState('');
   const [selectedTags, setSelectedTags] = useState(['토론폭망']);
+
+  const hasUnsavedChanges = content.trim().length > 0;
+
+  const confirmLeave = useCallback(() => {
+    if (hasUnsavedChanges) {
+      Alert.alert(
+        '작성 취소',
+        '작성 중인 내용이 저장되지 않아요. 나가시겠어요?',
+        [
+          { text: '취소', style: 'cancel' },
+          {
+            text: '나가기',
+            style: 'destructive',
+            onPress: () => navigation.goBack(),
+          },
+        ]
+      );
+      return true;
+    }
+    return false;
+  }, [hasUnsavedChanges, navigation]);
+
+  useTossBackGuard(confirmLeave, hasUnsavedChanges);
 
   const toggleTag = tag => {
     Haptics.selectionAsync().catch(() => {});
@@ -51,7 +75,15 @@ export default function WriteScreen({ navigation, route }) {
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
       <KeyboardAvoidingView style={styles.keyboardView} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
+          <TouchableOpacity
+            onPress={() => {
+              if (hasUnsavedChanges) {
+                confirmLeave();
+              } else {
+                navigation.goBack();
+              }
+            }}
+          >
             <Text style={styles.headerCancelText}>취소</Text>
           </TouchableOpacity>
 

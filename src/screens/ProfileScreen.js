@@ -23,7 +23,7 @@ export default function ProfileScreen({ navigation }) {
   const [isEditingBio, setIsEditingBio] = useState(false);
   const [newBio, setNewBio] = useState(currentUser.bio);
 
-  const userPosts = posts.filter(post => !post.seed);
+  const userPosts = posts.filter(post => post.authorUid === currentUser.uid);
 
   const handleSaveBio = () => {
     if (!newBio.trim()) {

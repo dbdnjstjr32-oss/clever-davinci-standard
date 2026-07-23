@@ -8,10 +8,10 @@ export default defineConfig({
     icon: 'https://static.toss.im/appsintoss/57005/760b6f95-7415-4c33-8065-51e63b766d6b.png',
   },
   web: {
-    host: 'localhost',
+    host: '0.0.0.0',
     port: 8082,
     commands: {
-      dev: 'expo start --web --port 8082',
+      dev: 'http-server dist -p 8082 -a 0.0.0.0 -c-1 --cors',
       build: 'expo export --platform web',
     },
   },

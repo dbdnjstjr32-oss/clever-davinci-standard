@@ -15,6 +15,8 @@ import * as Haptics from 'expo-haptics';
 import { useStoreState, store } from '../data';
 import { colors, fonts, radius } from '../theme';
 import ScreenContainer from '../components/ScreenContainer';
+import DoroScholar from '../components/DoroScholar';
+import { checkObserverGuard } from '../hooks/useObserverGuard';
 
 const REACTIONS = ['👑', '🏺', '🧪', '🕯️'];
 
@@ -127,10 +129,12 @@ export default function MakerFeedScreen({ navigation }) {
   const renderItem = ({ item: post, index }) => (
     <FeedCard
       post={post}
-      commentCount={store.getComments(post.id).length}
+      commentCount={post.commentCount || 0}
       index={index}
       onOpenDetail={id => navigation.navigate('StoryDetail', { id })}
-      onReact={(id, emoji) => store.reactToPost(id, emoji)}
+      onReact={(id, emoji) =>
+        checkObserverGuard(navigation, 'react', () => store.reactToPost(id, emoji))
+      }
     />
   );
 
@@ -147,22 +151,27 @@ export default function MakerFeedScreen({ navigation }) {
           <Text style={styles.headerTitle}>아틀리에</Text>
         </View>
 
-        <TouchableOpacity style={styles.profileIconButton} onPress={() => navigation.navigate('Profile')}>
-          <Text style={styles.headerAvatarLetter}>{currentUser.avatar}</Text>
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity
+            style={styles.writeIconButton}
+            activeOpacity={0.85}
+            onPress={() => {
+              checkObserverGuard(navigation, 'write', () => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+                navigation.navigate('Write', { category: 'maker' });
+              });
+            }}
+          >
+            <Text style={styles.writeIconButtonText}>+</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.profileIconButton}
+            onPress={() => checkObserverGuard(navigation, 'profile', () => navigation.navigate('Profile'))}
+          >
+            <Text style={styles.headerAvatarLetter}>{currentUser.avatar}</Text>
+          </TouchableOpacity>
+        </View>
       </BlurView>
-
-      <TouchableOpacity
-        style={styles.myFailureButton}
-        activeOpacity={0.85}
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-          navigation.navigate('Write', { category: 'maker' });
-        }}
-      >
-        <Text style={styles.myFailureButtonIcon}>+</Text>
-        <Text style={styles.myFailureButtonText}>나의 실패</Text>
-      </TouchableOpacity>
 
       {posts.length === 0 ? (
         <View style={styles.emptyContainer}>
@@ -179,6 +188,11 @@ export default function MakerFeedScreen({ navigation }) {
           keyExtractor={item => item.id}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.listContent}
+          ListHeaderComponent={() => (
+            <View style={{ alignItems: 'center', marginBottom: 16 }}>
+              <DoroScholar width={160} height={87} filterScale={7.5} />
+            </View>
+          )}
         />
       )}
     </ScreenContainer>
@@ -237,29 +251,26 @@ const styles = StyleSheet.create({
     fontFamily: fonts.title,
     color: colors.textPrimary,
   },
-  myFailureButton: {
-    height: 48,
+  headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    marginHorizontal: 16,
-    marginTop: 14,
-    borderRadius: radius.md,
-    borderWidth: 1,
+    gap: 10,
+  },
+  writeIconButton: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    borderWidth: 1.5,
     borderColor: colors.gold,
     backgroundColor: 'rgba(197, 168, 128, 0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  myFailureButtonIcon: {
+  writeIconButtonText: {
     fontSize: 16,
     fontFamily: fonts.title,
     color: colors.gold,
-  },
-  myFailureButtonText: {
-    fontSize: 14,
-    fontFamily: fonts.title,
-    color: colors.goldBright,
-    letterSpacing: 0.3,
+    lineHeight: 18,
   },
   emptyContainer: {
     flex: 1,

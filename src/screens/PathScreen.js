@@ -6,6 +6,8 @@ import * as Haptics from 'expo-haptics';
 import { colors, fonts } from '../theme';
 import ScreenContainer from '../components/ScreenContainer';
 
+import { useStoreState, store } from '../data';
+
 const Sign = ({ label, icon, rotate, onPress, delay }) => {
   const anim = useRef(new Animated.Value(0)).current;
 
@@ -50,6 +52,7 @@ const Sign = ({ label, icon, rotate, onPress, delay }) => {
 };
 
 export default function PathScreen({ navigation }) {
+  const isObserver = useStoreState(() => store.isObserver());
   // 숨겨진 통로: 하단 문구를 길게 누르면 학칙이 있는 첫 화면으로 되돌아간다.
   const secretGlow = useRef(new Animated.Value(0)).current;
 
@@ -73,6 +76,19 @@ export default function PathScreen({ navigation }) {
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
       <View style={{ flex: 1 }}>
         <LinearGradient colors={colors.bgGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.gradient}>
+          {isObserver && (
+            <TouchableOpacity
+              style={styles.observerBanner}
+              onPress={() => {
+                store.exitObserver();
+                navigation.navigate('Auth');
+              }}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.observerBannerText}>👁️ 관찰자 모드 (읽기 전용) · 토스 로그인 →</Text>
+            </TouchableOpacity>
+          )}
+
           <View style={styles.header}>
             <Text style={styles.title}>어느 길로 향하시겠습니까</Text>
             <Text style={styles.subtitle}>두 갈래 흙길이 아카데미아 깊은 곳으로 이어집니다</Text>
@@ -126,6 +142,21 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     marginBottom: 8,
+  },
+  observerBanner: {
+    alignSelf: 'center',
+    marginBottom: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    backgroundColor: 'rgba(197, 168, 128, 0.12)',
+    borderWidth: 1,
+    borderColor: colors.gold,
+  },
+  observerBannerText: {
+    fontSize: 12,
+    fontFamily: fonts.title,
+    color: colors.goldBright,
   },
   title: {
     fontFamily: fonts.display,

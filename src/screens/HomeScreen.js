@@ -9,12 +9,16 @@ import {
   Animated,
   Easing,
   BackHandler,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import ScreenContainer from '../components/ScreenContainer';
+import ThinkerScholar from '../components/ThinkerScholar';
+import { store } from '../data';
 import { fonts } from '../theme';
+import { useTossBackGuard } from '../hooks/useTossBackGuard';
 
 const RULES = [
   {
@@ -97,14 +101,10 @@ export default function HomeScreen({ navigation }) {
   const ruleAnims = useRef(RULES.map(() => new Animated.Value(0))).current;
 
   // 앱인토스 가이드: 첫 화면에서 뒤로가기 → 미니앱 종료
-  useFocusEffect(
+  useTossBackGuard(
     useCallback(() => {
-      const onBackPress = () => {
-        BackHandler.exitApp();
-        return true;
-      };
-      const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
-      return () => subscription.remove();
+      BackHandler.exitApp();
+      return true;
     }, [])
   );
 
@@ -182,9 +182,7 @@ export default function HomeScreen({ navigation }) {
                 { opacity: glowOpacity, transform: [{ scale: glowScale }] },
               ]}
             />
-            <View style={styles.emblemCircle}>
-              <Text style={styles.emblemIcon}>🏛️</Text>
-            </View>
+            <ThinkerScholar width={160} height={204} filterScale={7.5} />
           </View>
 
           <Animated.View style={entranceStyle}>
@@ -239,9 +237,9 @@ export default function HomeScreen({ navigation }) {
           </View>
 
           <TouchableOpacity
-            style={styles.ctaButton}
+            style={styles.ctaButtonInScroll}
             activeOpacity={0.85}
-            onPress={() => navigation.navigate('Path')}
+            onPress={() => navigation.navigate((store.isSignedIn() || store.isObserver()) ? 'Path' : 'Auth')}
           >
             <LinearGradient
               colors={['#E8D5A8', '#C5A880', '#A8875A']}
@@ -258,6 +256,24 @@ export default function HomeScreen({ navigation }) {
             아카데미아의 문은 실패한 모든 이에게 열려 있습니다.
           </Text>
         </ScrollView>
+
+        <View style={styles.fixedBottomBar}>
+          <TouchableOpacity
+            style={styles.ctaButton}
+            activeOpacity={0.85}
+            onPress={() => navigation.navigate((store.isSignedIn() || store.isObserver()) ? 'Path' : 'Auth')}
+          >
+            <LinearGradient
+              colors={['#E8D5A8', '#C5A880', '#A8875A']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.ctaGradient}
+            >
+              <Text style={styles.ctaText}>입학하기</Text>
+              <Text style={styles.ctaArrow}>→</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
       </LinearGradient>
     </ScreenContainer>
   );
@@ -280,13 +296,13 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 24,
     paddingTop: 16,
-    paddingBottom: 40,
+    paddingBottom: 110,
   },
   emblemWrap: {
     alignItems: 'center',
     justifyContent: 'center',
-    height: 160,
-    marginBottom: 8,
+    height: 220,
+    marginBottom: 12,
   },
   emblemGlow: {
     position: 'absolute',
@@ -421,8 +437,32 @@ const styles = StyleSheet.create({
     color: '#8A7A5A',
     lineHeight: 18,
   },
+  ctaButtonInScroll: {
+    width: '100%',
+    marginTop: 28,
+    borderRadius: 14,
+    overflow: 'hidden',
+    shadowColor: '#C5A880',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 10,
+  },
+  fixedBottomBar: {
+    position: Platform.OS === 'web' ? 'fixed' : 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    zIndex: 9999,
+    elevation: 9999,
+    paddingHorizontal: 24,
+    paddingTop: 12,
+    paddingBottom: 24,
+    backgroundColor: 'rgba(18, 14, 8, 0.92)',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(197, 168, 128, 0.25)',
+  },
   ctaButton: {
-    marginTop: 32,
     borderRadius: 14,
     overflow: 'hidden',
     shadowColor: '#C5A880',

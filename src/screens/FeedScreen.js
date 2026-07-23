@@ -5,7 +5,7 @@ import {
   Text,
   TouchableOpacity,
   StatusBar,
-  Dimensions,
+  useWindowDimensions,
   Platform,
   Animated,
 } from 'react-native';
@@ -16,10 +16,12 @@ import * as Haptics from 'expo-haptics';
 import { useStoreState, store } from '../data';
 import { colors, fonts, radius } from '../theme';
 import ScreenContainer from '../components/ScreenContainer';
+import DoroScholar from '../components/DoroScholar';
+import { checkObserverGuard } from '../hooks/useObserverGuard';
 
 const REACTIONS = ['👑', '🏺', '🧪', '🕯️'];
 
-// 도슨트(전시 해설사)의 능청스러운 한마디 — 인덱스로 돌려가며 노출
+// 도슨트(전시 해설사)의 능청스러운 한마디 — 카드 인덱스별 다양하게 노출 (총 30종)
 const DOCENT_LINES = [
   '플래시 촬영은 삼가주세요. 실패가 부끄러워합니다.',
   '작품에 손대지 마세요. 실패는 옮을 수 있습니다.',
@@ -27,14 +29,54 @@ const DOCENT_LINES = [
   '이것은 실패가 아니라 설치미술입니다. 아마도.',
   '관람평은 조용히, 폭소는 마음속으로 부탁드립니다.',
   '본 작품은 작가의 피, 땀, 그리고 흑역사로 제작되었습니다.',
+  '실패는 성공의 어머니라지만, 어머니가 너무 많습니다.',
+  '도슨트조차 차마 눈을 떼지 못하는 웅장한 흑역사입니다.',
+  '이곳의 모든 작품은 100% 실화에 기반하여 재구성되었습니다.',
+  '눈물 없이는 볼 수 없고, 웃음 없이는 견딜 수 없는 거작입니다.',
+  '완벽한 성공보다 인간미 넘치는 실패가 더 아름다운 법입니다.',
+  '지나가시던 소크라테스님도 허허 웃고 가신 실패입니다.',
+  '멀리서 보면 희극, 가까이서 보면 대작입니다.',
+  '실패의 깊이가 깊을수록 아카데미아의 가치는 올라갑니다.',
+  '이 작품 앞에서는 잠시 묵념 대신 헛웃음을 지어주세요.',
+  '당시 작가의 심정: "차라리 꿈이었으면 좋겠다."',
+  '역사상 가장 아름답게 부서진 계획의 파편입니다.',
+  '주의: 관람 중 자신과 유사한 경험을 떠올리고 오열할 수 있습니다.',
+  '실패는 죄가 아닙니다. 단지 조금 부끄러울 뿐입니다.',
+  '이 방에 들어선 이상, 당신의 실패도 이미 예술입니다.',
+  '도슨트 한마디: "저도 작년에 비슷한 짓을 했습니다."',
+  '이 정도 실패면 국립현대미술관 특별전 감입니다.',
+  '흑역사 청산 불가 판정을 받은 유서 깊은 순간입니다.',
+  '작가의 의도: 대성공 / 현실: 영구 소장 명작.',
+  '당시 상황을 복기할수록 이불이 찢어질 것 같습니다.',
+  '박물관 지정 문화재: "역대급 헛발질의 기록".',
+  '실패도 계속되면 예술이 된다는 증거입니다.',
+  '작가가 이 글을 쓸 때 손을 떨었다는 소문이 있습니다.',
+  '이 작품의 가치는 작가의 민망함과 비례합니다.',
+  '다음 생엔 꼭 성공하겠다는 결의가 느껴지는 걸작입니다.',
 ];
 
-// 전시 배너 부제 — 능청스러운 미술관 문구
+// 전시 배너 부제 — 능청스러운 미술관 문구 (총 20종)
 const EXHIBIT_SUBTITLES = [
   '오늘도 성황리에 실패 중',
   '입장료 · 당신의 흑역사 1건',
   '무료 관람 · 위로는 유료',
   '재관람 시 더 짠해집니다',
+  '실패의 전당 · 기획 상설전',
+  '이불 킥 방지 구역',
+  '성공률 0%의 당당한 미학',
+  '세계 3대 흑역사 대전시',
+  '실패한 자들의 영광스러운 학당',
+  '당신의 실패도 조각품이 됩니다',
+  '흑역사 연대기 · 명예의 전당',
+  '인생은 희극, 실전은 미학',
+  '눈물 젖은 소장품 컬렉션',
+  '실패자 전용 럭셔리 라운지',
+  '완벽주의 치료 구역',
+  '흑역사를 팝니다, 영혼을 삽니다',
+  '낙방생들의 정기 총회',
+  '당당하게 헛발질한 자들의 기록',
+  '아카데미아 아틀리에 특별 기획전',
+  '실패도 모이면 역사가 된다',
 ];
 
 // 리액션 총합으로 실패의 '등급'을 능청스럽게 감정
@@ -75,13 +117,22 @@ export default function FeedScreen({ navigation }) {
 
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  const { height: windowHeight } = Dimensions.get('window');
+  // 카드 높이를 헤더/버튼 높이를 빼서 "추정"하면 기기별 세이프에어리어·웹뷰
+  // 크롬 차이로 실제 리스트 영역과 어긋나 하단이 잘릴 수 있다 (실사용 중 발견).
+  // 대신 리스트를 감싸는 뷰의 onLayout으로 실제 렌더링된 높이를 "측정"해서
+  // 그 값을 카드 높이/snapToInterval로 쓴다 — 페이징 스냅은 그대로 유지된다.
+  const { height: windowHeight } = useWindowDimensions();
   const HEADER_HEIGHT = 60;
-  const MY_FAILURE_BAR_HEIGHT = 62;
   const safeOffset = Platform.OS === 'ios' ? 44 : 0;
-  // 웹에서는 Dimensions height가 viewport 높이와 다를 수 있어 useWindowDimensions 사용
-  const ITEM_HEIGHT =
-    windowHeight - HEADER_HEIGHT - MY_FAILURE_BAR_HEIGHT - safeOffset;
+  // onLayout이 아직 안 왔거나(첫 프레임, 혹은 특정 환경에서 안 붙는 경우 대비)
+  // 실패했을 때의 폴백. measuredHeight가 잡히면 그 값이 우선한다.
+  const estimatedHeight = windowHeight - HEADER_HEIGHT - safeOffset;
+  const [measuredHeight, setMeasuredHeight] = useState(0);
+  const ITEM_HEIGHT = measuredHeight || estimatedHeight;
+  const handleListAreaLayout = e => {
+    const h = e.nativeEvent.layout.height;
+    if (h > 0 && h !== measuredHeight) setMeasuredHeight(h);
+  };
   const scrollY = useRef(new Animated.Value(0)).current;
 
   const handleMomentumEnd = e => {
@@ -90,7 +141,6 @@ export default function FeedScreen({ navigation }) {
   };
 
   const renderItem = ({ item: post, index }) => {
-    const comments = store.getComments(post.id);
     const total = REACTIONS.reduce((sum, e) => sum + (post.reactions[e] || 0), 0);
     const grade = getGrade(total);
     const appraisal = total >= 90 ? '값을 매길 수 없음' : `₩ ${formatWon(total * 137000 + 42000)}`;
@@ -111,8 +161,9 @@ export default function FeedScreen({ navigation }) {
         />
 
         <View style={styles.cardTop}>
-          {/* 전시 배너 */}
+          {/* 전시 배너 & 도슨트 학자 */}
           <View style={styles.exhibitBanner}>
+            <DoroScholar width={160} height={87} filterScale={7.5} style={{ marginBottom: 4 }} />
             <View style={styles.exhibitOrnamentRow}>
               <View style={styles.exhibitLine} />
               <Text style={styles.exhibitTitle}>실패 미술관 · 상설전</Text>
@@ -184,7 +235,7 @@ export default function FeedScreen({ navigation }) {
                 key={emoji}
                 emoji={emoji}
                 count={post.reactions[emoji] || 0}
-                onPress={() => store.reactToPost(post.id, emoji)}
+                onPress={() => checkObserverGuard(navigation, 'react', () => store.reactToPost(post.id, emoji))}
               />
             ))}
           </View>
@@ -192,17 +243,6 @@ export default function FeedScreen({ navigation }) {
           <View style={styles.docentRow}>
             <Text style={styles.docentTag}>도슨트</Text>
             <Text style={styles.docentLine}>“{docentLine}”</Text>
-          </View>
-
-          <View style={styles.footerRow}>
-            <TouchableOpacity
-              style={styles.debateButton}
-              activeOpacity={0.75}
-              onPress={() => navigation.navigate('StoryDetail', { id: post.id })}
-            >
-              <Text style={styles.debateButtonText}>방명록 보기 →</Text>
-            </TouchableOpacity>
-            <Text style={styles.commentCount}>💬 {comments.length}</Text>
           </View>
         </View>
       </Animated.View>
@@ -227,49 +267,56 @@ export default function FeedScreen({ navigation }) {
           )}
         </View>
 
-        <TouchableOpacity style={styles.profileIconButton} onPress={() => navigation.navigate('Profile')}>
-          <Text style={styles.headerAvatarLetter}>{currentUser.avatar}</Text>
-        </TouchableOpacity>
-      </BlurView>
-
-      <TouchableOpacity
-        style={styles.myFailureButton}
-        activeOpacity={0.85}
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-          navigation.navigate('Write', { category: 'daily' });
-        }}
-      >
-        <Text style={styles.myFailureButtonIcon}>+</Text>
-        <Text style={styles.myFailureButtonText}>나의 실패 출품하기</Text>
-      </TouchableOpacity>
-
-      {posts.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>전시실이 텅 비었습니다.</Text>
-          <Text style={styles.emptySubtext}>미술관 첫 소장품의 주인공이 되어보세요.</Text>
-          <TouchableOpacity style={styles.emptyButton} onPress={() => navigation.navigate('Write', { category: 'daily' })}>
-            <Text style={styles.emptyButtonText}>실패 출품하기</Text>
+        <View style={styles.headerActions}>
+          <TouchableOpacity
+            style={styles.writeIconButton}
+            activeOpacity={0.85}
+            onPress={() => {
+              checkObserverGuard(navigation, 'write', () => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+                navigation.navigate('Write', { category: 'daily' });
+              });
+            }}
+          >
+            <Text style={styles.writeIconButtonText}>+</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.profileIconButton}
+            onPress={() => checkObserverGuard(navigation, 'profile', () => navigation.navigate('Profile'))}
+          >
+            <Text style={styles.headerAvatarLetter}>{currentUser.avatar}</Text>
           </TouchableOpacity>
         </View>
-      ) : (
-        <Animated.FlatList
-          data={posts}
-          renderItem={renderItem}
-          keyExtractor={item => item.id}
-          pagingEnabled
-          snapToInterval={ITEM_HEIGHT}
-          snapToAlignment="start"
-          decelerationRate="fast"
-          showsVerticalScrollIndicator={false}
-          style={styles.flatList}
-          onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
-            useNativeDriver: true,
-          })}
-          onMomentumScrollEnd={handleMomentumEnd}
-          scrollEventThrottle={16}
-        />
-      )}
+      </BlurView>
+
+      <View style={styles.listArea} onLayout={handleListAreaLayout}>
+        {posts.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>전시실이 텅 비었습니다.</Text>
+            <Text style={styles.emptySubtext}>미술관 첫 소장품의 주인공이 되어보세요.</Text>
+            <TouchableOpacity style={styles.emptyButton} onPress={() => navigation.navigate('Write', { category: 'daily' })}>
+              <Text style={styles.emptyButtonText}>실패 출품하기</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <Animated.FlatList
+            data={posts}
+            renderItem={renderItem}
+            keyExtractor={item => item.id}
+            pagingEnabled
+            snapToInterval={ITEM_HEIGHT}
+            snapToAlignment="start"
+            decelerationRate="fast"
+            showsVerticalScrollIndicator={false}
+            style={styles.flatList}
+            onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
+              useNativeDriver: true,
+            })}
+            onMomentumScrollEnd={handleMomentumEnd}
+            scrollEventThrottle={16}
+          />
+        )}
+      </View>
     </ScreenContainer>
   );
 }
@@ -278,6 +325,9 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: colors.bg,
+  },
+  listArea: {
+    flex: 1,
   },
   header: {
     height: 60,
@@ -319,29 +369,26 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     marginTop: 3,
   },
-  myFailureButton: {
-    height: 48,
+  headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    marginHorizontal: 16,
-    marginTop: 14,
-    borderRadius: radius.md,
-    borderWidth: 1,
+    gap: 10,
+  },
+  writeIconButton: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    borderWidth: 1.5,
     borderColor: colors.gold,
     backgroundColor: 'rgba(197, 168, 128, 0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  myFailureButtonIcon: {
+  writeIconButtonText: {
     fontSize: 16,
     fontFamily: fonts.title,
     color: colors.gold,
-  },
-  myFailureButtonText: {
-    fontSize: 14,
-    fontFamily: fonts.title,
-    color: colors.goldBright,
-    letterSpacing: 0.3,
+    lineHeight: 18,
   },
   profileIconButton: {
     width: 30,
@@ -583,6 +630,7 @@ const styles = StyleSheet.create({
   reactionRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    marginTop: -30,
     marginBottom: 14,
   },
   reactionItem: {
@@ -631,27 +679,5 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontFamily: fonts.bodySerif,
     fontStyle: 'italic',
-  },
-  footerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 10,
-  },
-  debateButton: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: colors.gold,
-  },
-  debateButtonText: {
-    fontSize: 12.5,
-    color: colors.gold,
-    fontFamily: fonts.title,
-  },
-  commentCount: {
-    fontSize: 13,
-    color: colors.textMuted,
   },
 });
