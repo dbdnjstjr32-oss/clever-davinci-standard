@@ -15,6 +15,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { useStoreState, store } from '../data';
+import { ANON_LOGIN_ENABLED, LOGIN_COPY } from '../tossAuth';
 import { colors, fonts } from '../theme';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -28,9 +29,32 @@ const ERROR_MESSAGES = {
   'auth/invalid-credential': '이메일 또는 비밀번호가 올바르지 않습니다.',
 };
 
+// Toss entry failures. Unlike the dev form below we never surface err.message
+// here - it carries backend/SDK wording that means nothing to a visitor - so
+// every branch maps to copy written for this screen.
+const TOSS_ERROR_MESSAGES = {
+  // The mini-app runs on an old Toss/SDK build that has no user-key bridge.
+  'toss/sdk-outdated': '토스 앱을 업데이트하면 입장할 수 있어요.',
+  // Registered under the wrong console category - a setup bug, not a user one.
+  'toss/invalid-category': '입장 설정에 문제가 있어요. 잠시 후 다시 시도해 주세요.',
+  'toss/unavailable': '토스에서 입장 정보를 받지 못했어요. 잠시 후 다시 시도해 주세요.',
+  // Callable-side failures (httpsCallable prefixes its codes with `functions/`).
+  'functions/unavailable': '연결이 불안정해요. 잠시 후 다시 시도해 주세요.',
+  'functions/deadline-exceeded': '연결이 불안정해요. 잠시 후 다시 시도해 주세요.',
+  'functions/unauthenticated':
+    '토스 계정 확인에 실패했어요. 토스 앱을 최신 버전으로 업데이트한 뒤 다시 시도해 주세요.',
+  'functions/failed-precondition': '입장 기능을 준비하고 있어요.',
+  'functions/not-found': '입장 기능을 준비하고 있어요.',
+};
+
 function describeError(err) {
   if (err?.code && err.code in ERROR_MESSAGES) return ERROR_MESSAGES[err.code];
   return err?.message || '알 수 없는 오류가 발생했습니다.';
+}
+
+function describeAuthError(err) {
+  if (err?.code && err.code in TOSS_ERROR_MESSAGES) return TOSS_ERROR_MESSAGES[err.code];
+  return '입장하지 못했어요. 잠시 후 다시 시도해 주세요.';
 }
 
 export default function AuthScreen({ navigation }) {
@@ -118,16 +142,20 @@ export default function AuthScreen({ navigation }) {
     if (signedIn) navigation.replace('Path');
   }, [signedIn]);
 
+  // On success we do not navigate here: the `signedIn` effect above is the one
+  // and only route into 'Path', so a successful login can't fire two
+  // transitions. On failure we show the reason and stay put - a failed login
+  // must never silently drop the visitor into observer mode, which is what
+  // made the error state below unreachable before. Observer entry stays an
+  // explicit choice via the button underneath.
   const handleTossLogin = async () => {
     setBusy(true);
     setError('');
     try {
       await store.signInWithToss();
-      navigation.reset({ index: 0, routes: [{ name: 'Path' }] });
     } catch (err) {
       console.error('[AuthScreen.js] handleTossLogin:', err);
-      store.enterAsObserver();
-      navigation.reset({ index: 0, routes: [{ name: 'Path' }] });
+      setError(describeAuthError(err));
     } finally {
       setBusy(false);
     }
@@ -180,11 +208,8 @@ export default function AuthScreen({ navigation }) {
               </View>
             </View>
 
-            <Text style={styles.title}>학자로 입장하기</Text>
-            <Text style={styles.subtitle}>
-              토스 로그인 한 번으로 입장해요.{'\n'}
-              실패담은 익명 닉네임으로 전시되며, 토스 계정 정보는 공개되지 않아요.
-            </Text>
+            <Text style={styles.title}>{LOGIN_COPY.title}</Text>
+            <Text style={styles.subtitle}>{LOGIN_COPY.subtitle}</Text>
 
             {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
@@ -192,7 +217,7 @@ export default function AuthScreen({ navigation }) {
               <View style={styles.loadingWrap}>
                 <ActivityIndicator color={colors.gold} />
               </View>
-            ) : inToss ? (
+            ) : inToss && ANON_LOGIN_ENABLED ? (
               <TouchableOpacity
                 style={[styles.tossButton, busy && styles.buttonDisabled]}
                 onPress={handleTossLogin}
@@ -202,11 +227,18 @@ export default function AuthScreen({ navigation }) {
                 {busy ? (
                   <ActivityIndicator color="#1A1208" />
                 ) : (
-                  <Text style={styles.tossButtonText}>토스로 시작하기</Text>
+                  <Text style={styles.tossButtonText}>{LOGIN_COPY.cta}</Text>
                 )}
               </TouchableOpacity>
-            ) : (
+            ) : !inToss && __DEV__ ? (
               <DevFallback busy={busy} setBusy={setBusy} error={error} setError={setError} />
+            ) : (
+              // Either inside Toss before the backend exists, or a production
+              // web build. Neither can sign anyone in, so the only entry we
+              // offer is the observer button rendered below.
+              <View style={styles.pendingNotice}>
+                <Text style={styles.pendingNoticeText}>{LOGIN_COPY.cta}</Text>
+              </View>
             )}
 
             <TouchableOpacity
@@ -223,9 +255,12 @@ export default function AuthScreen({ navigation }) {
   );
 }
 
-// Browser / local-dev only. Never renders inside the Toss WebView (there we
-// show the Toss button), so it does not violate the "Toss login only" policy;
-// it just keeps `expo start --web` testable while the backend is scaffolded.
+// Development builds outside Toss only - the caller gates this on `__DEV__`,
+// which Metro replaces with the literal `false` in `expo export`, so the form
+// and its handlers are dropped from the shipped bundle entirely. That keeps
+// the "미니앱에서 로그인 기능은 토스 로그인만 사용할 수 있어요" policy intact
+// while `expo start --web` stays testable. There are no credentials here: a
+// developer types their own test account.
 function DevFallback({ busy, setBusy, error, setError }) {
   const [mode, setMode] = useState('signIn');
   const [email, setEmail] = useState('');
@@ -433,6 +468,22 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontFamily: fonts.title,
     color: '#1A1208',
+  },
+  // Deliberately styled as a flat, unpressable plaque rather than a disabled
+  // gold button, so nobody taps it waiting for something to happen.
+  pendingNotice: {
+    paddingVertical: 15,
+    borderRadius: 14,
+    backgroundColor: 'rgba(197, 168, 128, 0.06)',
+    borderWidth: 1,
+    borderColor: colors.hairline,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pendingNoticeText: {
+    fontSize: 14,
+    fontFamily: fonts.title,
+    color: colors.textMuted,
   },
   observerButton: {
     marginTop: 14,

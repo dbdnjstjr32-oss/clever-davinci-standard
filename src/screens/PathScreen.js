@@ -7,6 +7,7 @@ import { colors, fonts } from '../theme';
 import ScreenContainer from '../components/ScreenContainer';
 
 import { useStoreState, store } from '../data';
+import { ANON_LOGIN_ENABLED, LOGIN_COPY } from '../tossAuth';
 
 const Sign = ({ label, icon, rotate, onPress, delay }) => {
   const anim = useRef(new Animated.Value(0)).current;
@@ -80,12 +81,12 @@ export default function PathScreen({ navigation }) {
             <TouchableOpacity
               style={styles.observerBanner}
               onPress={() => {
-                store.exitObserver();
+                if (ANON_LOGIN_ENABLED) store.exitObserver();
                 navigation.navigate('Auth');
               }}
               activeOpacity={0.85}
             >
-              <Text style={styles.observerBannerText}>👁️ 관찰자 모드 (읽기 전용) · 토스 로그인 →</Text>
+              <Text style={styles.observerBannerText}>{LOGIN_COPY.observerBanner}</Text>
             </TouchableOpacity>
           )}
 

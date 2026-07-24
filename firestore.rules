@@ -154,7 +154,7 @@ service cloud.firestore {
     }
 
     match /posts/{postId} {
-      allow read: if isAuthenticated();
+      allow read: if true;
       allow create: if isAuthenticated() && isValidPost(request.resource.data);
       allow update: if isAuthenticated() && (isValidReactionUpdate() || isValidCommentCountUpdate());
       allow delete: if false;
@@ -173,7 +173,7 @@ service cloud.firestore {
       }
 
       match /comments/{commentId} {
-        allow read: if isAuthenticated();
+        allow read: if true;
         allow create: if isAuthenticated() && isValidComment(request.resource.data);
         allow update: if false;
         allow delete: if false;

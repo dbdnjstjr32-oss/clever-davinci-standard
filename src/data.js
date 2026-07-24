@@ -1037,7 +1037,8 @@ function stopListening() {
   userProfile = null;
 }
 
-function startListening(uid) {
+function startPostsListening() {
+  if (postsUnsubscribe) return;
   const postsQuery = query(collection(db, 'posts'), orderBy('createdAt', 'desc'));
   postsUnsubscribe = onSnapshot(
     postsQuery,
@@ -1050,7 +1051,12 @@ function startListening(uid) {
     },
     err => console.error('[data.js] posts listener error:', err)
   );
+}
 
+function startListening(uid) {
+  startPostsListening();
+
+  if (userDocUnsubscribe) userDocUnsubscribe();
   userDocUnsubscribe = onSnapshot(
     doc(db, 'users', uid),
     snap => {
@@ -1068,7 +1074,9 @@ onAuthStateChanged(auth, user => {
   if (user && !wasSignedIn) {
     startListening(user.uid);
   } else if (!user && wasSignedIn) {
-    stopListening();
+    if (!isObserverMode) {
+      stopListening();
+    }
   }
   notify();
 });
@@ -1090,22 +1098,16 @@ async function createProfileIfMissing(uid, email) {
   });
 }
 
-// Compliant AppsInToss login path (primary in production). Signs in via Toss,
-// then guarantees a profile document exists for the resulting uid.
+// Compliant AppsInToss login path (the only production path). Signs in via
+// Toss, then guarantees a profile document exists for the resulting uid.
+//
+// This deliberately has NO fallback. An earlier version caught every failure
+// and signed the user into one shared hardcoded account, which meant every
+// user ended up on the same uid - same profile, same nickname, same post
+// author - and shipped that account's password in the web bundle. Failures
+// must propagate so the caller can show them; a failed login is not a login.
 async function signInWithToss() {
-  try {
-    await tossSignIn();
-  } catch (err) {
-    console.warn('[data.js] tossSignIn error, executing seamless dev fallback:', err);
-    const devEmail = 'toss_user@academia.internal';
-    const devPass = 'toss_pass_123456';
-    try {
-      await signInWithEmailAndPassword(auth, devEmail, devPass);
-    } catch {
-      const cred = await createUserWithEmailAndPassword(auth, devEmail, devPass);
-      await createProfileIfMissing(cred.user.uid, devEmail);
-    }
-  }
+  await tossSignIn();
   const user = auth.currentUser;
   if (user) await createProfileIfMissing(user.uid, user.email);
   return user;
@@ -1204,11 +1206,15 @@ export const store = {
 
   enterAsObserver() {
     isObserverMode = true;
+    startPostsListening();
     notify();
   },
 
   exitObserver() {
     isObserverMode = false;
+    if (!authUser) {
+      stopListening();
+    }
     notify();
   },
 
@@ -1247,7 +1253,7 @@ export const store = {
   },
 
   getComments(postId) {
-    if (authUser && !commentsUnsubscribes[postId]) {
+    if ((authUser || isObserverMode) && !commentsUnsubscribes[postId]) {
       const commentsQuery = query(
         collection(db, 'posts', postId, 'comments'),
         orderBy('createdAt', 'asc')

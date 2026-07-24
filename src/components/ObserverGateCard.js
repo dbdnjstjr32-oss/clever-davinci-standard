@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, fonts } from '../theme';
 import { store } from '../data';
+import { ANON_LOGIN_ENABLED, LOGIN_COPY } from '../tossAuth';
 
 /**
  * 관찰자 모드에서 목록 앞부분(10개)만 보여준 뒤 노출하는 로그인 유도 카드.
@@ -11,16 +12,18 @@ export default function ObserverGateCard({ navigation, remaining, style }) {
   return (
     <View style={[styles.container, style]}>
       <Text style={styles.icon}>🔒</Text>
-      <Text style={styles.title}>여기까지가 관찰자 무료 관람입니다</Text>
+      <Text style={styles.title}>{LOGIN_COPY.gateTitle}</Text>
       <Text style={styles.subtitle}>
-        토스로 로그인하면{'\n'}
+        {LOGIN_COPY.gateSubtitle}{'\n'}
         {remaining > 0 ? `이야기 ${remaining}편을 더 ` : ''}만나볼 수 있어요
       </Text>
       <TouchableOpacity
         style={styles.button}
         activeOpacity={0.85}
         onPress={() => {
-          store.exitObserver();
+          // Until entry opens, keep the observer session alive - backing out of
+          // the "준비 중" notice shouldn't cost them their read-only access.
+          if (ANON_LOGIN_ENABLED) store.exitObserver();
           navigation.navigate('Auth');
         }}
       >
@@ -30,7 +33,7 @@ export default function ObserverGateCard({ navigation, remaining, style }) {
           end={{ x: 1, y: 1 }}
           style={styles.buttonGradient}
         >
-          <Text style={styles.buttonText}>토스로 로그인하기 →</Text>
+          <Text style={styles.buttonText}>{LOGIN_COPY.gateCta}</Text>
         </LinearGradient>
       </TouchableOpacity>
     </View>
