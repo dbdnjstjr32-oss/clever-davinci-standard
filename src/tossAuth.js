@@ -6,45 +6,18 @@ import { app, auth } from './firebase';
 // functions/index.js). Kept next to Firestore's Seoul region.
 const FUNCTIONS_REGION = 'asia-northeast3';
 
-/**
- * Master switch for "can a user actually sign in right now?".
- *
- * Flipped to `true` on 2026-07-24 once the backend went live: Blaze plan
- * active, mTLS cert/key + ANON_UID_PEPPER secrets set, and `anonKeyLogin`
- * deployed to asia-northeast3 (confirmed via functions:list). Before that,
- * this stayed `false` so the app offered observer (read-only) entry instead of
- * a login button that could only fail.
- *
- * There is deliberately no fallback sign-in path behind this flag; every
- * account must come from a server-verified Toss identity. If this ever needs
- * to go back to `false` (e.g. the callable is removed or broken), flip it back
- * in the same change - never leave a dangling login button with no backend.
- */
-export const ANON_LOGIN_ENABLED = true;
-
-// Login-related copy lives next to the flag so the two can never drift: when
-// the flag flips, every "준비 중" string flips with it.
-export const LOGIN_COPY = ANON_LOGIN_ENABLED
-  ? {
-      title: '학자로 입장하기',
-      subtitle:
-        '토스로 한 번에 입장해요.\n실패담은 익명 닉네임으로 전시되며, 토스 계정 정보는 공개되지 않아요.',
-      cta: '토스로 시작하기',
-      gateTitle: '여기까지가 관찰자 무료 관람입니다',
-      gateSubtitle: '토스로 입장하면',
-      gateCta: '토스로 입장하기 →',
-      observerBanner: '👁️ 관찰자 모드 (읽기 전용) · 토스로 입장 →',
-    }
-  : {
-      title: '학자로 입장하기',
-      subtitle:
-        '입장 기능을 준비하고 있어요.\n지금은 관찰자로 아카데미아를 둘러볼 수 있어요.',
-      cta: '입장 준비 중',
-      gateTitle: '여기까지가 관찰자 무료 관람입니다',
-      gateSubtitle: '입장 기능이 열리면',
-      gateCta: '입장 준비 중',
-      observerBanner: '👁️ 관찰자 모드 (읽기 전용) · 입장 기능 준비 중',
-    };
+// Login-facing copy. The backend (anonKeyLogin, asia-northeast3) went live
+// 2026-07-24; these strings are the final, production-ready versions.
+export const LOGIN_COPY = {
+  title: '학자로 입장하기',
+  subtitle:
+    '토스로 한 번에 입장해요.\n실패담은 익명 닉네임으로 전시되며, 토스 계정 정보는 공개되지 않아요.',
+  cta: '토스로 시작하기',
+  gateTitle: '여기까지가 관찰자 무료 관람입니다',
+  gateSubtitle: '토스로 입장하면',
+  gateCta: '토스로 입장하기 →',
+  observerBanner: '👁️ 관찰자 모드 (읽기 전용) · 토스로 입장 →',
+};
 
 // Lazily load the AppsInToss web-framework so the plain-web / local-dev bundle
 // never evaluates its native-bridge code. Its functions only work inside the

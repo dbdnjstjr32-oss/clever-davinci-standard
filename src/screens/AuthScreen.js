@@ -15,7 +15,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { useStoreState, store } from '../data';
-import { ANON_LOGIN_ENABLED, LOGIN_COPY } from '../tossAuth';
+import { LOGIN_COPY } from '../tossAuth';
 import { colors, fonts } from '../theme';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -217,7 +217,7 @@ export default function AuthScreen({ navigation }) {
               <View style={styles.loadingWrap}>
                 <ActivityIndicator color={colors.gold} />
               </View>
-            ) : inToss && ANON_LOGIN_ENABLED ? (
+            ) : inToss ? (
               <TouchableOpacity
                 style={[styles.tossButton, busy && styles.buttonDisabled]}
                 onPress={handleTossLogin}

@@ -7,7 +7,7 @@ import { colors, fonts } from '../theme';
 import ScreenContainer from '../components/ScreenContainer';
 
 import { useStoreState, store } from '../data';
-import { ANON_LOGIN_ENABLED, LOGIN_COPY } from '../tossAuth';
+import { LOGIN_COPY } from '../tossAuth';
 
 const Sign = ({ label, icon, rotate, onPress, delay }) => {
   const anim = useRef(new Animated.Value(0)).current;
@@ -81,7 +81,7 @@ export default function PathScreen({ navigation }) {
             <TouchableOpacity
               style={styles.observerBanner}
               onPress={() => {
-                if (ANON_LOGIN_ENABLED) store.exitObserver();
+                store.exitObserver();
                 navigation.navigate('Auth');
               }}
               activeOpacity={0.85}

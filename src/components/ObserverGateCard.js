@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, fonts } from '../theme';
 import { store } from '../data';
-import { ANON_LOGIN_ENABLED, LOGIN_COPY } from '../tossAuth';
+import { LOGIN_COPY } from '../tossAuth';
 
 /**
  * 관찰자 모드에서 목록 앞부분(10개)만 보여준 뒤 노출하는 로그인 유도 카드.
@@ -21,9 +21,7 @@ export default function ObserverGateCard({ navigation, remaining, style }) {
         style={styles.button}
         activeOpacity={0.85}
         onPress={() => {
-          // Until entry opens, keep the observer session alive - backing out of
-          // the "준비 중" notice shouldn't cost them their read-only access.
-          if (ANON_LOGIN_ENABLED) store.exitObserver();
+          store.exitObserver();
           navigation.navigate('Auth');
         }}
       >
